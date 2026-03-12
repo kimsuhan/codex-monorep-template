@@ -82,6 +82,10 @@ Codex must have the following skills installed before working in this repository
 - [`impeccable`](https://github.com/pbakaus/impeccable): required when establishing or refining design quality and UI review workflows
 - [`superpowers`](https://github.com/obra/superpowers): required for the process discipline this template expects around planning, verification, debugging, and skill-driven execution
 
+Supported companion skill for UI exploration:
+
+- [`ui-ux-pro-max`](https://skills.sh/nextlevelbuilder/ui-ux-pro-max-skill/ui-ux-pro-max): optional companion for visual direction exploration, style expansion, and broader UI/UX ideation; do not treat it as the final authority over repository design decisions
+
 If these skills are not installed locally, Codex should be considered not ready for this project.
 
 Important constraint:
@@ -96,6 +100,8 @@ Repository policy:
 - Keep the project contract and required-skill list in `AGENTS.md` and this `README`.
 - Install the actual skill files into each developer's local Codex skill directory.
 - If the team wants reproducible setup, add repository scripts or onboarding docs that install/sync those local skills.
+- For UI work, use `ui-ux-pro-max` to broaden options when needed, then resolve final decisions against repository docs and the project-specific design context created with `impeccable`.
+- If you install the optional companion skill, use `npx skills add nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max -g -y` and restart Codex afterward so it is discovered.
 
 ## Documentation
 

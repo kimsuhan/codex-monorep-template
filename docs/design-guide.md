@@ -39,9 +39,15 @@ This document defines the default UI and UX direction for `apps/web`.
 
 ## Frontend Design Skill Usage
 
+- Treat repository docs as the source of truth for shipped UI behavior and quality expectations.
+- Use `impeccable` to establish or refine project-specific design context and to judge whether a proposed UI direction fits the product.
+- Use `ui-ux-pro-max` as a companion skill when you need broader visual exploration, style proposals, or help expanding a rough wireframe into stronger UI options.
+- When guidance conflicts, follow this order: repository docs first, `impeccable` design context second, `ui-ux-pro-max` suggestions third.
 - Use design review skills such as `/audit` and `/critique` before major redesigns or when evaluating an existing UI.
 - Use alignment and finish skills such as `/normalize` and `/polish` when the main behavior already exists and quality needs to improve.
 - Use simplification and clarity skills such as `/distill` and `/clarify` when the issue is complexity, comprehension, or copy quality.
 - Use resilience and performance skills such as `/optimize` and `/harden` when preparing UI for real product load and edge cases.
 - Use expression skills such as `/animate`, `/colorize`, `/bolder`, `/quieter`, and `/delight` only when they reinforce product goals and do not weaken usability.
 - Use `/extract` to turn repeated UI into reusable patterns and `/adapt` or `/onboard` when the problem is context shift or first-use experience.
+- A practical workflow is: `vercel-react-best-practices` for implementation discipline, `ui-ux-pro-max` for early exploration when needed, then `/normalize`, `/clarify`, and `/polish` to bring the selected direction back into the repository's standards.
+- Do not adopt style experiments that reduce clarity, obscure hierarchy, or make core product tasks harder to complete.

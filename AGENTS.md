@@ -30,6 +30,8 @@ Read these documents before making broad changes:
 
 When working in `apps/web`, choose design skills deliberately based on the task:
 
+- Use `impeccable` when establishing project-specific design context, setting a quality bar, or reviewing whether UI work matches the intended product direction.
+- `ui-ux-pro-max` is an officially supported companion skill for early visual exploration, style direction, wireframe expansion, and broader UI/UX ideation.
 - Use `/audit` for technical UI quality reviews across accessibility, performance, responsiveness, theming consistency, and AI-like rough edges. Prefer it for finding issues, not directly fixing them.
 - Use `/critique` for product and UX design review. Prefer it when the question is whether the screen communicates well, feels intentional, and supports user goals.
 - Use `/normalize` to align one-off UI with the repository's design system patterns, tokens, spacing, typography, motion, and responsive conventions.
@@ -48,6 +50,8 @@ When working in `apps/web`, choose design skills deliberately based on the task:
 - Use `/onboard` for first-run flows, setup guidance, empty states, and time-to-value improvements.
 
 Use only the minimum set of skills needed for the task. For most frontend implementation work, start with `vercel-react-best-practices` and add one or two design skills only when the task clearly calls for them.
+Use `ui-ux-pro-max` for exploration and option generation, then bring the result back into alignment with repository rules through `impeccable` and the existing refinement skills.
+When guidance conflicts, follow this priority order: repository docs and local project conventions first, `impeccable` design context second, `ui-ux-pro-max` suggestions third.
 
 ## Working Rules
 
