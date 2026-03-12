@@ -18,9 +18,10 @@ Get from fresh clone to a validated first feature branch in about 30 minutes.
 
 1. Install dependencies with `pnpm install`.
 2. Initialize the template identity with `pnpm template:init --name=my-platform`.
-3. Copy `apps/api/.env.example` and `apps/web/.env.example` into local `.env` files.
-4. Start both apps with `pnpm dev`.
-5. Run `pnpm validate` before opening the first PR or changing repository-wide rules.
+3. Create `docs/plans/YYYY-MM-DD-my-platform.md` from `docs/plans/templates/project-brief.md` and write the initial product brief.
+4. Copy `apps/api/.env.example` and `apps/web/.env.example` into local `.env` files.
+5. Start both apps with `pnpm dev`.
+6. Run `pnpm validate` before opening the first PR or changing repository-wide rules.
 
 ## First Checks
 

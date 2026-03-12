@@ -21,6 +21,8 @@ Read these documents before making broad changes:
 6. `docs/design-guide.md` when changing UI or UX
 7. `docs/release-and-ops.md` when changing build, deployment, or environment behavior
 
+When starting a new product or initiative from this template, also read `docs/plans/README.md` before implementing the first feature.
+
 ## Skill Requirements
 
 - When modifying `apps/api`, you must use [$nestjs-best-practices](/Users/kim/.codex/skills/agent-nestjs-skills/SKILL.md).
@@ -56,6 +58,7 @@ When guidance conflicts, follow this priority order: repository docs and local p
 ## Working Rules
 
 - Keep changes scoped to the target app or shared tooling that the change actually requires.
+- For new projects started from this template, record the initial product brief in `docs/plans` before the first feature implementation.
 - Prefer feature-oriented structure in the API and avoid cross-module coupling.
 - Prefer React patterns that minimize unnecessary client work, bundle growth, and render churn.
 - Run app-local validation before claiming completion, and run `pnpm validate` for root tooling, CI, docs, or cross-app changes.
@@ -66,6 +69,7 @@ When guidance conflicts, follow this priority order: repository docs and local p
 ## Document Index
 
 - `docs/design-guide.md`: interface direction, accessibility, responsive behavior
+- `docs/plans/README.md`: planning workflow, naming rules, and template selection
 - `docs/code-style.md`: shared TypeScript, testing, naming, and formatting rules
 - `docs/code-style-api.md`: NestJS backend structure and code rules
 - `docs/code-style-web.md`: React frontend structure and code rules

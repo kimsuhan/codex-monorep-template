@@ -15,6 +15,7 @@ Codex-first `pnpm` monorepo template for teams that want an opinionated starting
 ```bash
 pnpm install
 pnpm template:init --name=my-platform
+cp docs/plans/templates/project-brief.md docs/plans/2026-03-12-my-platform.md
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 pnpm dev
@@ -45,6 +46,7 @@ pnpm format
 - `apps/web`: frontend application
 - `tooling/`: repository-level scripts and shared config
 - `docs/`: operating rules and contributor guidance
+- `docs/plans`: project planning space and reusable planning templates
 - `packages/*`: reserved for future shared packages
 
 ## Required Read Order
@@ -63,6 +65,7 @@ Start here before broad changes:
 ## Working Contract
 
 - Keep API work inside `apps/api`, web work inside `apps/web`, and shared rules in `docs/` or root tooling.
+- When starting a new product from this template, write the initial planning document in `docs/plans` before the first feature implementation.
 - Update the matching `docs/*` file when repository conventions materially change.
 - Run app-local validation for app-only work.
 - Run `pnpm validate` for root tooling, CI, shared docs, or cross-app behavior changes.
@@ -105,6 +108,7 @@ Repository policy:
 
 ## Documentation
 
+- `docs/plans/README.md`: planning workflow, naming rules, and template selection
 - `docs/template-usage.md`: clone, rename, env setup, and first-feature workflow
 - `docs/onboarding.md`: 30-minute bootstrap checklist
 - `docs/monorepo.md`: layout, commands, and ownership boundaries
