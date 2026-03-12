@@ -1,0 +1,103 @@
+.home-shell {
+  display: grid;
+  gap: 2.5rem;
+  min-height: 100vh;
+  padding: clamp(1.5rem, 4vw, 4rem);
+  align-content: center;
+  background:
+    radial-gradient(circle at top left, oklch(0.98 0.04 95), transparent 38%),
+    linear-gradient(180deg, oklch(0.99 0.01 95), oklch(0.96 0.02 90));
+}
+
+.home-hero {
+  max-width: 54rem;
+}
+
+.home-eyebrow,
+.workspace-targets-label,
+.template-readiness-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  font-family: 'Helvetica Neue', 'Arial Narrow', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: oklch(0.5 0.06 55);
+}
+
+.home-title {
+  margin: 0;
+  font-size: clamp(3rem, 8vw, 6rem);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.home-copy {
+  max-width: 44rem;
+  margin: 1.25rem 0 0;
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  color: oklch(0.35 0.03 240);
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.surface {
+  padding: 1.25rem;
+  border: 1px solid oklch(0.84 0.03 80);
+  background: color-mix(in oklab, white 82%, oklch(0.92 0.03 88));
+  box-shadow: 0 1.5rem 3rem -2rem oklch(0.58 0.03 80 / 0.28);
+}
+
+.workspace-targets-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.workspace-targets-item {
+  padding: 1rem;
+  border: 1px solid oklch(0.84 0.03 80);
+  background: color-mix(in oklab, white 72%, oklch(0.92 0.03 88));
+}
+
+.workspace-targets-title {
+  display: block;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 1.1rem;
+}
+
+.template-readiness-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.template-readiness-title {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.template-readiness-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: oklch(0.29 0.02 240);
+}
+
+.template-readiness-item + .template-readiness-item {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .home-grid,
+  .workspace-targets-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .home-title {
+    max-width: 12ch;
+  }
+}
