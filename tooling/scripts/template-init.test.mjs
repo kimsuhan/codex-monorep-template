@@ -73,7 +73,7 @@ Brief: {{PROJECT_BRIEF_PATH}}
 Idea mode: {{PROJECT_IDEA_MODE}}
 Idea:
 {{PROJECT_IDEA}}
-Instruction: verify and refine the existing brief at {{PROJECT_BRIEF_PATH}}.
+Instruction: review, refine, and complete the existing brief in place at {{PROJECT_BRIEF_PATH}}.
 `;
 
 async function createTemplateInitWorkspace(prefix = 'template-init-cli-') {
@@ -285,6 +285,7 @@ Brief: {{PROJECT_BRIEF_PATH}}
 Idea mode: {{PROJECT_IDEA_MODE}}
 Idea:
 {{PROJECT_IDEA}}
+Instruction: review, refine, and complete the existing brief in place at {{PROJECT_BRIEF_PATH}}.
 `,
     {
       projectName: 'my-platform',
@@ -320,6 +321,10 @@ Idea:
   assert.match(
     prompt,
     /use the captured idea below as source material to verify and refine the existing brief/,
+  );
+  assert.match(
+    prompt,
+    /review, refine, and complete the existing brief in place/,
   );
   assert.match(
     prompt,
@@ -397,7 +402,7 @@ test('buildInitialProjectBrief writes placeholders when no idea was captured', (
 test('buildCodexExecCommand returns stdin-driven fallback command', () => {
   assert.equal(
     buildCodexExecCommand('/workspace/project', '/workspace/project/.codex/bootstrap/init.prompt.md'),
-    'codex exec --cd "/workspace/project" - < "/workspace/project/.codex/bootstrap/init.prompt.md"',
+    'codex exec --sandbox workspace-write --cd "/workspace/project" - < "/workspace/project/.codex/bootstrap/init.prompt.md"',
   );
 });
 
@@ -448,6 +453,7 @@ Idea:
   assert.deepEqual(manifest, {
     projectName: 'my-platform',
     projectBriefPath: 'docs/plans/2026-03-13-my-platform.md',
+    codexSandboxMode: 'workspace-write',
     shouldInstallDependencies: false,
     shouldBootstrapSkills: true,
     shouldRunCodex: false,
@@ -523,7 +529,7 @@ Idea:
 
   assert.match(output, /Template initialized for My Platform/);
   assert.match(output, /Codex autorun skipped: `codex` CLI not found\./);
-  assert.match(output, /codex exec --cd/);
+  assert.match(output, /codex exec --sandbox workspace-write --cd/);
   assert.match(
     await readFile(
       path.join(workspacePath, '.codex/bootstrap/init.prompt.md'),
@@ -638,7 +644,10 @@ test('cli creates an initial dated brief before Codex autorun is considered', as
     promptContents,
     /use the captured idea below as source material to verify and refine the existing brief/,
   );
-  assert.match(promptContents, /verify and refine the existing brief/);
+  assert.match(
+    promptContents,
+    /review, refine, and complete the existing brief in place/,
+  );
 });
 
 test('cli creates a placeholder brief when no project idea was provided', async () => {

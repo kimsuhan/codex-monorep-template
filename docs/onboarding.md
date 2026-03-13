@@ -20,17 +20,18 @@ Get from fresh clone to a Codex-ready workspace and validated first feature bran
 1. Run `pnpm template:init --name=my-platform`.
 2. Let the bootstrap flow replace the template identity, optionally run `pnpm install`, and capture what you want to build.
 3. Confirm that `docs/plans/YYYY-MM-DD-my-platform.md` now exists immediately after bootstrap, created from `docs/plans/templates/project-brief.md`.
-4. If `codex` is available, let the bootstrap run `codex exec` so Codex can verify skills and refine that initial brief.
+4. If `codex` is available, let the bootstrap run `codex exec --sandbox workspace-write` so Codex can verify skills and refine that initial brief directly.
 5. If Codex autorun is skipped, run the printed fallback command against `.codex/bootstrap/init.prompt.md`.
-5. Copy `apps/api/.env.example` and `apps/web/.env.example` into local `.env` files if you have not already done so.
-6. Start both apps with `pnpm dev`.
-7. Run `pnpm validate` before opening the first PR or changing repository-wide rules.
+6. Treat the dated brief as the writable source of truth for bootstrap; Codex should refine that file in place, while Node still owns the interview flow and fallback orchestration.
+7. Copy `apps/api/.env.example` and `apps/web/.env.example` into local `.env` files if you have not already done so.
+8. Start both apps with `pnpm dev`.
+9. Run `pnpm validate` before opening the first PR or changing repository-wide rules.
 
 Manual fallback remains valid when you do not want the interactive bootstrap:
 
 1. Run `pnpm install`.
 2. Run `pnpm template:init --name=my-platform --skip-install --no-run-codex --project-idea="Describe what you want to build"`.
-3. Run `codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"`.
+3. Run `codex exec --sandbox workspace-write --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"`.
 
 ## First Checks
 

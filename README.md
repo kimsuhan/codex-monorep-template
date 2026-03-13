@@ -24,7 +24,7 @@ pnpm dev
 - asks what you want to build, or accepts `--project-idea="..."`
 - creates `docs/plans/YYYY-MM-DD-<project>.md` immediately from `docs/plans/templates/project-brief.md`
 - generates `.codex/bootstrap/init.prompt.md`
-- can run `codex exec` so Codex verifies skills and refines the first `docs/plans` brief
+- can run `codex exec --sandbox workspace-write` so Codex verifies skills and directly refines the first `docs/plans` brief in place
 
 If you decline Codex autorun, the script prints the exact fallback command to run manually.
 
@@ -35,7 +35,7 @@ pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
 pnpm template:init --name=my-platform --skip-install --no-run-codex --project-idea="Describe what you want to build"
-codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"
+codex exec --sandbox workspace-write --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"
 pnpm dev
 ```
 
@@ -118,8 +118,9 @@ Important constraint:
 - In this environment, installed skills are discovered from directories such as `~/.codex/skills` and `~/.agents/skills`.
 - Do not assume a checked-in project folder like `./skills` will be auto-loaded.
 - After installing or updating skills, restart Codex so the new skills are discovered.
-- `pnpm template:init` writes `.codex/bootstrap/init.prompt.md` and `.codex/bootstrap/init.config.json` for the current workspace, then optionally runs the prompt with `codex exec`.
-- `pnpm template:init` also writes the initial `docs/plans/YYYY-MM-DD-<project>.md` brief before any Codex autorun begins.
+- `pnpm template:init` writes `.codex/bootstrap/init.prompt.md` and `.codex/bootstrap/init.config.json` for the current workspace, then optionally runs the prompt with `codex exec --sandbox workspace-write`.
+- `pnpm template:init` also writes the initial `docs/plans/YYYY-MM-DD-<project>.md` brief before any Codex autorun begins, and Codex is expected to refine that same file directly rather than only review it.
+- Node still owns the bootstrap interview, path decisions, fallback behavior, and orchestration; Codex stays scoped to the generated prompt contract and the prepared writable brief.
 
 Repository policy:
 
