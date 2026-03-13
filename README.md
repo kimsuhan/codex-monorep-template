@@ -21,6 +21,7 @@ pnpm dev
 
 - replaces the template identity
 - can run `pnpm install`
+- asks what you want to build, or accepts `--project-idea="..."`
 - generates `.codex/bootstrap/init.prompt.md`
 - can run `codex exec` so Codex verifies skills and creates the first `docs/plans` brief
 
@@ -32,6 +33,7 @@ Direct manual fallback remains supported:
 pnpm install
 cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.example apps/web/.env
+pnpm template:init --name=my-platform --skip-install --no-run-codex --project-idea="Describe what you want to build"
 codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"
 pnpm dev
 ```

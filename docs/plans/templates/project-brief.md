@@ -7,6 +7,10 @@
 - Date:
 - Status:
 
+## Source Idea
+
+- Original request or idea:
+
 ## Problem
 
 - What problem are we solving?

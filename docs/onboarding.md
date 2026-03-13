@@ -18,7 +18,7 @@ Get from fresh clone to a Codex-ready workspace and validated first feature bran
 ## First 30 Minutes
 
 1. Run `pnpm template:init --name=my-platform`.
-2. Let the bootstrap flow replace the template identity and optionally run `pnpm install`.
+2. Let the bootstrap flow replace the template identity, optionally run `pnpm install`, and capture what you want to build.
 3. If `codex` is available, let the bootstrap run `codex exec` so the initial `docs/plans/YYYY-MM-DD-my-platform.md` brief is created from `docs/plans/templates/project-brief.md`.
 4. If Codex autorun is skipped, run the printed fallback command against `.codex/bootstrap/init.prompt.md`.
 5. Copy `apps/api/.env.example` and `apps/web/.env.example` into local `.env` files if you have not already done so.
@@ -28,7 +28,7 @@ Get from fresh clone to a Codex-ready workspace and validated first feature bran
 Manual fallback remains valid when you do not want the interactive bootstrap:
 
 1. Run `pnpm install`.
-2. Run `pnpm template:init --name=my-platform --skip-install --no-run-codex`.
+2. Run `pnpm template:init --name=my-platform --skip-install --no-run-codex --project-idea="Describe what you want to build"`.
 3. Run `codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"`.
 
 ## First Checks

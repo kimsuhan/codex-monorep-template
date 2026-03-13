@@ -46,6 +46,8 @@ const jsonPackageNames = [
 const DEFAULT_SHOULD_INSTALL_DEPENDENCIES = true;
 const DEFAULT_SHOULD_BOOTSTRAP_SKILLS = true;
 const DEFAULT_SHOULD_RUN_CODEX = false;
+const MISSING_PROJECT_IDEA_MESSAGE =
+  'No product idea was captured during bootstrap.';
 
 export function deriveProjectIdentity(inputName) {
   const packageName = inputName
@@ -139,6 +141,159 @@ function assertKnownOptionalSkills(skillIds) {
   }
 }
 
+export function createOptionalSkillSelectionState(
+  skills,
+  selectedSkillIds = [],
+) {
+  return {
+    cursorIndex: 0,
+    items: skills.map((skill) => ({
+      ...skill,
+      checked: selectedSkillIds.includes(skill.id),
+    })),
+  };
+}
+
+export function applyCheckboxInteraction(state, action) {
+  if (state.items.length === 0) {
+    return state;
+  }
+
+  if (action === 'up') {
+    return {
+      ...state,
+      cursorIndex:
+        (state.cursorIndex - 1 + state.items.length) % state.items.length,
+    };
+  }
+
+  if (action === 'down') {
+    return {
+      ...state,
+      cursorIndex: (state.cursorIndex + 1) % state.items.length,
+    };
+  }
+
+  if (action === 'toggle') {
+    return {
+      ...state,
+      items: state.items.map((item, index) =>
+        index === state.cursorIndex
+          ? { ...item, checked: !item.checked }
+          : item,
+      ),
+    };
+  }
+
+  return state;
+}
+
+function renderOptionalSkillSelection(state) {
+  return [
+    'Optional Codex skills',
+    'Use ↑/↓ to move, space to toggle, enter to confirm.',
+    ...state.items.map((item, index) => {
+      const cursor = index === state.cursorIndex ? '>' : ' ';
+      const checkbox = item.checked ? 'x' : ' ';
+
+      return `${cursor} [${checkbox}] ${item.id} - ${item.requirement}`;
+    }),
+  ].join('\n');
+}
+
+async function askOptionalSkillSelectionWithCheckboxes() {
+  if (optionalSkills.length === 0) {
+    return [];
+  }
+
+  if (
+    !input.isTTY ||
+    !output.isTTY ||
+    typeof input.setRawMode !== 'function'
+  ) {
+    return null;
+  }
+
+  let state = createOptionalSkillSelectionState(optionalSkills);
+  const renderedLineCount = state.items.length + 2;
+  const previousRawMode = input.isRaw;
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      input.off('data', handleKeypress);
+
+      if (!previousRawMode) {
+        input.setRawMode(false);
+      }
+
+      input.pause();
+      output.write('\x1b[?25h');
+      output.write('\n');
+    };
+
+    const rerender = () => {
+      output.write(`\x1b[${renderedLineCount}F`);
+      output.write('\x1b[J');
+      output.write(renderOptionalSkillSelection(state));
+    };
+
+    const finish = () => {
+      const selectedSkillIds = state.items
+        .filter((item) => item.checked)
+        .map((item) => item.id);
+
+      cleanup();
+      resolve(selectedSkillIds);
+    };
+
+    const fail = (error) => {
+      cleanup();
+      reject(error);
+    };
+
+    const handleKeypress = (chunk) => {
+      const key = chunk.toString('utf8');
+
+      if (key === '\u0003') {
+        fail(new Error('Bootstrap cancelled.'));
+        return;
+      }
+
+      if (key === '\r' || key === '\n') {
+        finish();
+        return;
+      }
+
+      if (key === ' ') {
+        state = applyCheckboxInteraction(state, 'toggle');
+        rerender();
+        return;
+      }
+
+      if (key === '\u001b[A') {
+        state = applyCheckboxInteraction(state, 'up');
+        rerender();
+        return;
+      }
+
+      if (key === '\u001b[B') {
+        state = applyCheckboxInteraction(state, 'down');
+        rerender();
+      }
+    };
+
+    output.write('\x1b[?25l');
+    output.write(`${renderOptionalSkillSelection(state)}\n`);
+
+    if (!previousRawMode) {
+      input.setRawMode(true);
+    }
+
+    input.resume();
+    input.on('data', handleKeypress);
+  });
+}
+
 export function parseCliArguments(argv) {
   const [, , ...argumentsList] = argv;
   const parsed = {
@@ -147,6 +302,7 @@ export function parseCliArguments(argv) {
     shouldBootstrapSkills: undefined,
     shouldRunCodex: undefined,
     optionalSkills: undefined,
+    projectIdea: undefined,
   };
 
   for (const argument of argumentsList) {
@@ -184,6 +340,11 @@ export function parseCliArguments(argv) {
       parsed.optionalSkills = parseOptionalSkills(
         argument.slice('--optional-skills='.length),
       );
+      continue;
+    }
+
+    if (argument.startsWith('--project-idea=')) {
+      parsed.projectIdea = argument.slice('--project-idea='.length).trim();
     }
   }
 
@@ -219,13 +380,21 @@ export function buildBootstrapPrompt(templateContents, configuration) {
   const skillBootstrapMode = configuration.shouldBootstrapSkills
     ? 'verify, install, and report the listed skills before moving on'
     : 'verify the listed skills, report anything missing, and do not install anything automatically';
+  const projectIdeaMode = configuration.shouldAskForProjectIdea
+    ? 'ask the user what they want to build before writing the brief'
+    : 'use the captured idea below as source material for the brief';
+  const projectIdea = configuration.projectIdea?.trim()
+    ? configuration.projectIdea.trim()
+    : MISSING_PROJECT_IDEA_MESSAGE;
 
   return templateContents
     .replaceAll('{{PROJECT_NAME}}', configuration.projectName)
     .replaceAll('{{PROJECT_BRIEF_PATH}}', configuration.projectBriefPath)
     .replaceAll('{{REQUIRED_SKILLS}}', requiredSkillsBlock)
     .replaceAll('{{OPTIONAL_SKILLS}}', optionalSkillsBlock)
-    .replaceAll('{{SKILL_BOOTSTRAP_MODE}}', skillBootstrapMode);
+    .replaceAll('{{SKILL_BOOTSTRAP_MODE}}', skillBootstrapMode)
+    .replaceAll('{{PROJECT_IDEA_MODE}}', projectIdeaMode)
+    .replaceAll('{{PROJECT_IDEA}}', projectIdea);
 }
 
 export function buildCodexExecCommand(workspacePath, promptPath) {
@@ -250,6 +419,8 @@ export async function generateBootstrapArtifacts(workspacePath, configuration) {
     shouldInstallDependencies: configuration.shouldInstallDependencies,
     shouldBootstrapSkills: configuration.shouldBootstrapSkills,
     shouldRunCodex: configuration.shouldRunCodex,
+    projectIdea: configuration.projectIdea,
+    shouldAskForProjectIdea: configuration.shouldAskForProjectIdea,
     requiredSkills: configuration.requiredSkills.map((skill) => skill.id),
     optionalSkills: configuration.optionalSkills.map((skill) => skill.id),
   };
@@ -330,6 +501,25 @@ async function askQuestion(rl, question, defaultValue) {
   return response || defaultValue;
 }
 
+async function askMultilineQuestion(rl, question) {
+  output.write(`${question}\n`);
+  output.write('Press enter on an empty line to finish.\n');
+
+  const lines = [];
+
+  while (true) {
+    const line = await rl.question('> ');
+
+    if (line.trim().length === 0) {
+      break;
+    }
+
+    lines.push(line);
+  }
+
+  return lines.join('\n').trim();
+}
+
 async function askBooleanQuestion(rl, question, defaultValue) {
   const defaultLabel = defaultValue ? 'Y/n' : 'y/N';
 
@@ -361,6 +551,19 @@ async function askOptionalSkillSelection(rl) {
     return [];
   }
 
+  let checkboxSelection;
+
+  rl.pause();
+  try {
+    checkboxSelection = await askOptionalSkillSelectionWithCheckboxes();
+  } finally {
+    rl.resume();
+  }
+
+  if (checkboxSelection) {
+    return checkboxSelection;
+  }
+
   output.write('Optional Codex skills:\n');
   optionalSkills.forEach((skill) => {
     output.write(`- ${skill.id}: ${skill.requirement}\n`);
@@ -389,6 +592,7 @@ async function collectBootstrapAnswers(parsedArguments, workspacePath) {
     shouldBootstrapSkills: parsedArguments.shouldBootstrapSkills,
     shouldRunCodex: parsedArguments.shouldRunCodex,
     optionalSkills: parsedArguments.optionalSkills,
+    projectIdea: parsedArguments.projectIdea,
     codexBinary,
   };
 
@@ -434,6 +638,13 @@ async function collectBootstrapAnswers(parsedArguments, workspacePath) {
       answers.optionalSkills ??= await askOptionalSkillSelection(rl);
     } else {
       answers.optionalSkills ??= [];
+    }
+
+    if (answers.projectIdea === undefined) {
+      answers.projectIdea = await askMultilineQuestion(
+        rl,
+        'What do you want to build?',
+      );
     }
 
     if (answers.shouldRunCodex === undefined) {
@@ -495,6 +706,8 @@ async function runCli() {
     shouldInstallDependencies: answers.shouldInstallDependencies,
     shouldBootstrapSkills: answers.shouldBootstrapSkills,
     shouldRunCodex: answers.shouldRunCodex,
+    projectIdea: answers.projectIdea ?? '',
+    shouldAskForProjectIdea: !(answers.projectIdea ?? '').trim(),
     requiredSkills,
     optionalSkills: resolveOptionalSkills(answers.optionalSkills),
   };
