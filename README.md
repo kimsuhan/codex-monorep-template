@@ -13,15 +13,30 @@ Codex-first `pnpm` monorepo template for teams that want an opinionated starting
 ## Quick Start
 
 ```bash
-pnpm install
 pnpm template:init --name=my-platform
-cp docs/plans/templates/project-brief.md docs/plans/2026-03-12-my-platform.md
-cp apps/api/.env.example apps/api/.env
-cp apps/web/.env.example apps/web/.env
 pnpm dev
 ```
 
-After bootstrapping, verify the template baseline:
+`pnpm template:init` now guides the first-run bootstrap:
+
+- replaces the template identity
+- can run `pnpm install`
+- generates `.codex/bootstrap/init.prompt.md`
+- can run `codex exec` so Codex verifies skills and creates the first `docs/plans` brief
+
+If you decline Codex autorun, the script prints the exact fallback command to run manually.
+
+Direct manual fallback remains supported:
+
+```bash
+pnpm install
+cp apps/api/.env.example apps/api/.env
+cp apps/web/.env.example apps/web/.env
+codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"
+pnpm dev
+```
+
+After bootstrapping, verify the template baseline before opening the first PR:
 
 ```bash
 pnpm validate
@@ -30,6 +45,7 @@ pnpm validate
 ## Core Commands
 
 ```bash
+pnpm template:init
 pnpm template:init --name=my-platform
 pnpm dev
 pnpm lint
@@ -80,14 +96,16 @@ Validation shortcuts:
 
 Codex must have the following skills installed before working in this repository. Treat these as required local prerequisites, not optional enhancements.
 
-- [`react-best-practices`](https://vercel.com/blog/introducing-react-best-practices): required for `apps/web` work
+- [`vercel-react-best-practices`](https://github.com/vercel-labs/agent-skills/tree/main/vercel-react-best-practices): required for `apps/web` work
 - [`agent-nestjs-skills`](https://github.com/Kadajett/agent-nestjs-skills): required for `apps/api` work
 - [`impeccable`](https://github.com/pbakaus/impeccable): required when establishing or refining design quality and UI review workflows
 - [`superpowers`](https://github.com/obra/superpowers): required for the process discipline this template expects around planning, verification, debugging, and skill-driven execution
 
-Supported companion skill for UI exploration:
+Supported optional bootstrap skills:
 
 - [`ui-ux-pro-max`](https://skills.sh/nextlevelbuilder/ui-ux-pro-max-skill/ui-ux-pro-max): optional companion for visual direction exploration, style expansion, and broader UI/UX ideation; do not treat it as the final authority over repository design decisions
+
+`impeccable` should be installed into `~/.agents` so its bundled refinement skills such as `audit`, `critique`, `polish`, `harden`, and `optimize` are available without separate bootstrap prompts.
 
 If these skills are not installed locally, Codex should be considered not ready for this project.
 
@@ -97,18 +115,23 @@ Important constraint:
 - In this environment, installed skills are discovered from directories such as `~/.codex/skills` and `~/.agents/skills`.
 - Do not assume a checked-in project folder like `./skills` will be auto-loaded.
 - After installing or updating skills, restart Codex so the new skills are discovered.
+- `pnpm template:init` writes `.codex/bootstrap/init.prompt.md` and `.codex/bootstrap/init.config.json` for the current workspace, then optionally runs the prompt with `codex exec`.
 
 Repository policy:
 
 - Keep the project contract and required-skill list in `AGENTS.md` and this `README`.
+- Keep the structured bootstrap skill metadata in `tooling/scripts/template-bootstrap-config.mjs`.
 - Install the actual skill files into each developer's local Codex skill directory.
-- If the team wants reproducible setup, add repository scripts or onboarding docs that install/sync those local skills.
+- Use `docs/init/README.md` and `docs/init/codex-bootstrap-template.md` as the tracked bootstrap source of truth for Codex initialization.
 - For UI work, use `ui-ux-pro-max` to broaden options when needed, then resolve final decisions against repository docs and the project-specific design context created with `impeccable`.
+- Install `superpowers` by fetching and following [INSTALL.md](https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.codex/INSTALL.md).
+- Install `impeccable` into `~/.agents` so its bundled refinement skills are discovered together.
 - If you install the optional companion skill, use `npx skills add nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max -g -y` and restart Codex afterward so it is discovered.
 
 ## Documentation
 
 - `docs/plans/README.md`: planning workflow, naming rules, and template selection
+- `docs/init/README.md`: Codex bootstrap flow, prompt source, and generated artifact contract
 - `docs/template-usage.md`: clone, rename, env setup, and first-feature workflow
 - `docs/onboarding.md`: 30-minute bootstrap checklist
 - `docs/monorepo.md`: layout, commands, and ownership boundaries

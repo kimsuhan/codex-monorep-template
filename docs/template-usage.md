@@ -3,9 +3,9 @@
 ## Clone And Rename
 
 1. Clone the repository.
-2. Run `pnpm install`.
-3. Run `pnpm template:init --name=my-platform`.
-4. Copy `docs/plans/templates/project-brief.md` to `docs/plans/YYYY-MM-DD-my-platform.md` and write the initial product brief before the first feature implementation.
+2. Run `pnpm template:init --name=my-platform`.
+3. Use the interactive bootstrap to decide whether to run `pnpm install`, which optional Codex skills to prepare, and whether Codex should autorun.
+4. Let Codex create `docs/plans/YYYY-MM-DD-my-platform.md` from `docs/plans/templates/project-brief.md`, or run the printed fallback `codex exec` command manually.
 5. Review any remaining `codex-monorep-template` references before the first commit.
 
 ## Configure Environments
@@ -18,8 +18,16 @@
 
 - Run `pnpm dev` to start both apps.
 - Use `docs/plans/templates/project-brief.md` for the initial project brief and `docs/plans/templates/product-prd.md` when the work needs a deeper product requirements document.
+- Use `docs/init/README.md` when you need to re-run or debug the Codex bootstrap flow.
+- Reuse `.codex/bootstrap/init.prompt.md` if you want Codex to repeat the initial bootstrap flow in the same workspace.
 - Use `apps/api/src/modules/system` as the reference vertical slice for backend work.
 - Use `apps/web/src/pages/home` plus `apps/web/src/features/template-readiness` as the reference vertical slice for frontend work.
+
+Manual fallback path:
+
+- Run `pnpm install` yourself if you skipped it during bootstrap.
+- Run `pnpm template:init --name=my-platform --skip-install --no-run-codex` if you only want file preparation.
+- Run `codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"` when you are ready for Codex to verify skills and write the initial brief.
 
 ## Before Opening A PR
 

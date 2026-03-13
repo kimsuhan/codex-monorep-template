@@ -1,6 +1,22 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { createReadStream } from 'node:fs';
+import {
+  mkdir,
+  readFile,
+  writeFile,
+} from 'node:fs/promises';
 import path from 'node:path';
+import readline from 'node:readline/promises';
+import { spawn, spawnSync } from 'node:child_process';
+import { stdin as input, stdout as output } from 'node:process';
 import { pathToFileURL } from 'node:url';
+import {
+  bootstrapManifestPath,
+  bootstrapPromptPath,
+  bootstrapTemplatePath,
+  optionalSkillIds,
+  optionalSkills,
+  requiredSkills,
+} from './template-bootstrap-config.mjs';
 
 const TEMPLATE_PACKAGE_NAME = 'codex-monorep-template';
 const TEMPLATE_DISPLAY_NAME = 'Codex Internal Template';
@@ -17,6 +33,8 @@ const textReplacementPaths = [
   'docs/contributing.md',
   'docs/release-and-ops.md',
   'docs/template-usage.md',
+  'docs/init/README.md',
+  'docs/init/codex-bootstrap-template.md',
 ];
 
 const jsonPackageNames = [
@@ -24,6 +42,10 @@ const jsonPackageNames = [
   ['apps/api/package.json', (packageName) => `${packageName}-api`],
   ['apps/web/package.json', (packageName) => `${packageName}-web`],
 ];
+
+const DEFAULT_SHOULD_INSTALL_DEPENDENCIES = true;
+const DEFAULT_SHOULD_BOOTSTRAP_SKILLS = true;
+const DEFAULT_SHOULD_RUN_CODEX = false;
 
 export function deriveProjectIdentity(inputName) {
   const packageName = inputName
@@ -94,35 +116,433 @@ export async function applyTemplateIdentity(workspacePath, identity) {
   );
 }
 
-function parseCliArguments(argv) {
+function parseOptionalSkills(value) {
+  if (!value) {
+    return [];
+  }
+
+  return value
+    .split(',')
+    .map((skillId) => skillId.trim())
+    .filter(Boolean);
+}
+
+function assertKnownOptionalSkills(skillIds) {
+  const invalidSkillIds = skillIds.filter(
+    (skillId) => !optionalSkillIds.includes(skillId),
+  );
+
+  if (invalidSkillIds.length > 0) {
+    throw new Error(
+      `Unknown optional skills: ${invalidSkillIds.join(', ')}. Supported values: ${optionalSkillIds.join(', ')}`,
+    );
+  }
+}
+
+export function parseCliArguments(argv) {
   const [, , ...argumentsList] = argv;
+  const parsed = {
+    name: undefined,
+    shouldInstallDependencies: undefined,
+    shouldBootstrapSkills: undefined,
+    shouldRunCodex: undefined,
+    optionalSkills: undefined,
+  };
 
-  const providedName = argumentsList.find(
-    (argument) => !argument.startsWith('--'),
-  );
-  const providedFlag = argumentsList.find((argument) =>
-    argument.startsWith('--name='),
-  );
+  for (const argument of argumentsList) {
+    if (argument.startsWith('--name=')) {
+      parsed.name = argument.slice('--name='.length);
+      continue;
+    }
 
-  return providedName ?? providedFlag?.slice('--name='.length);
+    if (!argument.startsWith('--') && !parsed.name) {
+      parsed.name = argument;
+      continue;
+    }
+
+    if (argument === '--skip-install') {
+      parsed.shouldInstallDependencies = false;
+      continue;
+    }
+
+    if (argument === '--skip-skills') {
+      parsed.shouldBootstrapSkills = false;
+      continue;
+    }
+
+    if (argument === '--run-codex') {
+      parsed.shouldRunCodex = true;
+      continue;
+    }
+
+    if (argument === '--no-run-codex') {
+      parsed.shouldRunCodex = false;
+      continue;
+    }
+
+    if (argument.startsWith('--optional-skills=')) {
+      parsed.optionalSkills = parseOptionalSkills(
+        argument.slice('--optional-skills='.length),
+      );
+    }
+  }
+
+  if (parsed.optionalSkills) {
+    assertKnownOptionalSkills(parsed.optionalSkills);
+  }
+
+  return parsed;
+}
+
+function formatSkillList(skills, emptyMessage) {
+  if (skills.length === 0) {
+    return emptyMessage;
+  }
+
+  return skills
+    .map(
+      (skill) =>
+        `- \`${skill.displayName}\`: ${skill.requirement}. ${skill.installSummary}`,
+    )
+    .join('\n');
+}
+
+export function buildBootstrapPrompt(templateContents, configuration) {
+  const requiredSkillsBlock = formatSkillList(
+    configuration.requiredSkills,
+    '- No required skills configured.',
+  );
+  const optionalSkillsBlock = formatSkillList(
+    configuration.optionalSkills,
+    '- No optional skills were selected for this bootstrap run.',
+  );
+  const skillBootstrapMode = configuration.shouldBootstrapSkills
+    ? 'verify, install, and report the listed skills before moving on'
+    : 'verify the listed skills, report anything missing, and do not install anything automatically';
+
+  return templateContents
+    .replaceAll('{{PROJECT_NAME}}', configuration.projectName)
+    .replaceAll('{{PROJECT_BRIEF_PATH}}', configuration.projectBriefPath)
+    .replaceAll('{{REQUIRED_SKILLS}}', requiredSkillsBlock)
+    .replaceAll('{{OPTIONAL_SKILLS}}', optionalSkillsBlock)
+    .replaceAll('{{SKILL_BOOTSTRAP_MODE}}', skillBootstrapMode);
+}
+
+export function buildCodexExecCommand(workspacePath, promptPath) {
+  const escapedWorkspacePath = workspacePath.replaceAll('"', '\\"');
+  const escapedPromptPath = promptPath.replaceAll('"', '\\"');
+
+  return `codex exec --cd "${escapedWorkspacePath}" - < "${escapedPromptPath}"`;
+}
+
+export async function generateBootstrapArtifacts(workspacePath, configuration) {
+  const templatePath = path.join(workspacePath, bootstrapTemplatePath);
+  const promptTemplate = await readFile(templatePath, 'utf8');
+  const promptPath = path.join(workspacePath, bootstrapPromptPath);
+  const manifestPath = path.join(workspacePath, bootstrapManifestPath);
+
+  await mkdir(path.dirname(promptPath), { recursive: true });
+
+  const promptContents = buildBootstrapPrompt(promptTemplate, configuration);
+  const manifest = {
+    projectName: configuration.projectName,
+    projectBriefPath: configuration.projectBriefPath,
+    shouldInstallDependencies: configuration.shouldInstallDependencies,
+    shouldBootstrapSkills: configuration.shouldBootstrapSkills,
+    shouldRunCodex: configuration.shouldRunCodex,
+    requiredSkills: configuration.requiredSkills.map((skill) => skill.id),
+    optionalSkills: configuration.optionalSkills.map((skill) => skill.id),
+  };
+
+  await writeFile(promptPath, `${promptContents.trim()}\n`);
+  await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+
+  return {
+    promptPath,
+    manifestPath,
+  };
+}
+
+function detectCodexBinary() {
+  const requestedBinary = process.env.CODEX_BIN ?? 'codex';
+  const result = spawnSync('which', [requestedBinary], {
+    encoding: 'utf8',
+  });
+
+  if (result.status !== 0) {
+    return null;
+  }
+
+  return result.stdout.trim() || requestedBinary;
+}
+
+function runCommand(command, argumentsList, options = {}) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, argumentsList, {
+      cwd: options.cwd,
+      env: options.env,
+      stdio: options.stdio ?? 'inherit',
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(
+        new Error(
+          `${command} ${argumentsList.join(' ')} exited with code ${code}.`,
+        ),
+      );
+    });
+  });
+}
+
+async function runCodexBootstrap(codexBinary, workspacePath, promptPath) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(codexBinary, ['exec', '--cd', workspacePath, '-'], {
+      cwd: workspacePath,
+      stdio: ['pipe', 'inherit', 'inherit'],
+    });
+
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+
+      reject(new Error(`Codex bootstrap exited with code ${code}.`));
+    });
+
+    createReadStream(promptPath)
+      .on('error', reject)
+      .pipe(child.stdin);
+  });
+}
+
+async function askQuestion(rl, question, defaultValue) {
+  const suffix = defaultValue ? ` (${defaultValue})` : '';
+  const response = (await rl.question(`${question}${suffix}: `)).trim();
+
+  return response || defaultValue;
+}
+
+async function askBooleanQuestion(rl, question, defaultValue) {
+  const defaultLabel = defaultValue ? 'Y/n' : 'y/N';
+
+  while (true) {
+    const response = (
+      await rl.question(`${question} [${defaultLabel}]: `)
+    )
+      .trim()
+      .toLowerCase();
+
+    if (!response) {
+      return defaultValue;
+    }
+
+    if (['y', 'yes'].includes(response)) {
+      return true;
+    }
+
+    if (['n', 'no'].includes(response)) {
+      return false;
+    }
+
+    output.write('Please answer with y or n.\n');
+  }
+}
+
+async function askOptionalSkillSelection(rl) {
+  if (optionalSkills.length === 0) {
+    return [];
+  }
+
+  output.write('Optional Codex skills:\n');
+  optionalSkills.forEach((skill) => {
+    output.write(`- ${skill.id}: ${skill.requirement}\n`);
+  });
+
+  const response = await askQuestion(
+    rl,
+    'Select optional skills by comma-separated id, or leave blank for none',
+    '',
+  );
+  const selectedOptionalSkills = parseOptionalSkills(response);
+
+  assertKnownOptionalSkills(selectedOptionalSkills);
+
+  return selectedOptionalSkills;
+}
+
+async function collectBootstrapAnswers(parsedArguments, workspacePath) {
+  const isInteractive = Boolean(input.isTTY && output.isTTY);
+  const codexBinary = detectCodexBinary();
+  const currentDirectoryName = path.basename(workspacePath);
+
+  const answers = {
+    name: parsedArguments.name,
+    shouldInstallDependencies: parsedArguments.shouldInstallDependencies,
+    shouldBootstrapSkills: parsedArguments.shouldBootstrapSkills,
+    shouldRunCodex: parsedArguments.shouldRunCodex,
+    optionalSkills: parsedArguments.optionalSkills,
+    codexBinary,
+  };
+
+  if (!answers.name && currentDirectoryName !== TEMPLATE_PACKAGE_NAME) {
+    answers.name = currentDirectoryName;
+  }
+
+  if (!isInteractive) {
+    answers.shouldInstallDependencies ??= DEFAULT_SHOULD_INSTALL_DEPENDENCIES;
+    answers.shouldBootstrapSkills ??= DEFAULT_SHOULD_BOOTSTRAP_SKILLS;
+    answers.optionalSkills ??= [];
+    answers.shouldRunCodex ??= DEFAULT_SHOULD_RUN_CODEX;
+
+    return answers;
+  }
+
+  const rl = readline.createInterface({ input, output });
+
+  try {
+    if (!answers.name) {
+      answers.name = await askQuestion(
+        rl,
+        'Project name',
+        currentDirectoryName === TEMPLATE_PACKAGE_NAME
+          ? ''
+          : currentDirectoryName,
+      );
+    }
+
+    answers.shouldInstallDependencies ??= await askBooleanQuestion(
+      rl,
+      'Run pnpm install now',
+      DEFAULT_SHOULD_INSTALL_DEPENDENCIES,
+    );
+
+    answers.shouldBootstrapSkills ??= await askBooleanQuestion(
+      rl,
+      'Prepare Codex skill bootstrap now',
+      DEFAULT_SHOULD_BOOTSTRAP_SKILLS,
+    );
+
+    if (answers.shouldBootstrapSkills) {
+      answers.optionalSkills ??= await askOptionalSkillSelection(rl);
+    } else {
+      answers.optionalSkills ??= [];
+    }
+
+    if (answers.shouldRunCodex === undefined) {
+      answers.shouldRunCodex = codexBinary
+        ? await askBooleanQuestion(
+            rl,
+            'Run Codex bootstrap automatically after files are prepared',
+            true,
+          )
+        : false;
+    }
+
+    return answers;
+  } finally {
+    rl.close();
+  }
+}
+
+function buildProjectBriefPath(projectName) {
+  const today = new Date().toISOString().slice(0, 10);
+  return `docs/plans/${today}-${projectName}.md`;
+}
+
+function resolveOptionalSkills(skillIds) {
+  return optionalSkills.filter((skill) => skillIds.includes(skill.id));
+}
+
+async function printFallbackInstructions(reason, promptPath, workspacePath) {
+  output.write(`\nCodex autorun skipped: ${reason}\n`);
+  output.write(`Prompt file: ${promptPath}\n`);
+  output.write(
+    `Run this command when you are ready:\n${buildCodexExecCommand(workspacePath, promptPath)}\n`,
+  );
 }
 
 async function runCli() {
-  const requestedName =
-    parseCliArguments(process.argv) ?? path.basename(process.cwd());
+  const workspacePath = process.cwd();
+  const parsedArguments = parseCliArguments(process.argv);
+  const answers = await collectBootstrapAnswers(parsedArguments, workspacePath);
 
-  if (requestedName === TEMPLATE_PACKAGE_NAME) {
+  if (!answers.name || answers.name === TEMPLATE_PACKAGE_NAME) {
     throw new Error(
       'Provide a project name, for example: pnpm template:init --name=my-platform',
     );
   }
 
-  const identity = deriveProjectIdentity(requestedName);
-  await applyTemplateIdentity(process.cwd(), identity);
+  const identity = deriveProjectIdentity(answers.name);
 
-  process.stdout.write(
+  await applyTemplateIdentity(workspacePath, identity);
+
+  if (answers.shouldInstallDependencies) {
+    output.write('\nInstalling workspace dependencies with pnpm...\n');
+    await runCommand('pnpm', ['install'], { cwd: workspacePath });
+  }
+
+  const bootstrapConfiguration = {
+    projectName: identity.packageName,
+    projectBriefPath: buildProjectBriefPath(identity.packageName),
+    shouldInstallDependencies: answers.shouldInstallDependencies,
+    shouldBootstrapSkills: answers.shouldBootstrapSkills,
+    shouldRunCodex: answers.shouldRunCodex,
+    requiredSkills,
+    optionalSkills: resolveOptionalSkills(answers.optionalSkills),
+  };
+  const artifacts = await generateBootstrapArtifacts(
+    workspacePath,
+    bootstrapConfiguration,
+  );
+
+  output.write(
     `Template initialized for ${identity.displayName} (${identity.packageName}).\n`,
   );
+  output.write(`Bootstrap prompt: ${artifacts.promptPath}\n`);
+  output.write(`Bootstrap manifest: ${artifacts.manifestPath}\n`);
+
+  if (!answers.shouldRunCodex) {
+    await printFallbackInstructions(
+      'autorun not requested.',
+      artifacts.promptPath,
+      workspacePath,
+    );
+    return;
+  }
+
+  if (!answers.codexBinary) {
+    await printFallbackInstructions(
+      '`codex` CLI not found.',
+      artifacts.promptPath,
+      workspacePath,
+    );
+    return;
+  }
+
+  output.write('\nRunning Codex bootstrap...\n');
+
+  try {
+    await runCodexBootstrap(
+      answers.codexBinary,
+      workspacePath,
+      artifacts.promptPath,
+    );
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown error';
+    await printFallbackInstructions(
+      `${message} Use the generated prompt manually.`,
+      artifacts.promptPath,
+      workspacePath,
+    );
+  }
 }
 
 if (
