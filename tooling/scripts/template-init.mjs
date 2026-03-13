@@ -47,6 +47,7 @@ const jsonPackageNames = [
 const DEFAULT_SHOULD_INSTALL_DEPENDENCIES = true;
 const DEFAULT_SHOULD_BOOTSTRAP_SKILLS = true;
 const DEFAULT_SHOULD_RUN_CODEX = false;
+const CODEX_SANDBOX_MODE = 'workspace-write';
 const MISSING_PROJECT_IDEA_MESSAGE =
   'No product idea was captured during bootstrap.';
 const MISSING_PROJECT_IDEA_PLACEHOLDER =
@@ -407,7 +408,7 @@ export function buildCodexExecCommand(workspacePath, promptPath) {
   const escapedWorkspacePath = workspacePath.replaceAll('"', '\\"');
   const escapedPromptPath = promptPath.replaceAll('"', '\\"');
 
-  return `codex exec --cd "${escapedWorkspacePath}" - < "${escapedPromptPath}"`;
+  return `codex exec --sandbox ${CODEX_SANDBOX_MODE} --cd "${escapedWorkspacePath}" - < "${escapedPromptPath}"`;
 }
 
 export async function generateBootstrapArtifacts(workspacePath, configuration) {
@@ -422,6 +423,7 @@ export async function generateBootstrapArtifacts(workspacePath, configuration) {
   const manifest = {
     projectName: configuration.projectName,
     projectBriefPath: configuration.projectBriefPath,
+    codexSandboxMode: CODEX_SANDBOX_MODE,
     shouldInstallDependencies: configuration.shouldInstallDependencies,
     shouldBootstrapSkills: configuration.shouldBootstrapSkills,
     shouldRunCodex: configuration.shouldRunCodex,
@@ -666,10 +668,14 @@ function runCommand(command, argumentsList, options = {}) {
 
 async function runCodexBootstrap(codexBinary, workspacePath, promptPath) {
   return new Promise((resolve, reject) => {
-    const child = spawn(codexBinary, ['exec', '--cd', workspacePath, '-'], {
-      cwd: workspacePath,
-      stdio: ['pipe', 'inherit', 'inherit'],
-    });
+    const child = spawn(
+      codexBinary,
+      ['exec', '--sandbox', CODEX_SANDBOX_MODE, '--cd', workspacePath, '-'],
+      {
+        cwd: workspacePath,
+        stdio: ['pipe', 'inherit', 'inherit'],
+      },
+    );
 
     child.on('error', reject);
     child.on('close', (code) => {

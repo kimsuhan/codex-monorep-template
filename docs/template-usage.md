@@ -6,7 +6,7 @@
 2. Run `pnpm template:init --name=my-platform`.
 3. Use the interactive bootstrap to decide whether to run `pnpm install`, which optional Codex skills to prepare, what you want to build, and whether Codex should autorun.
 4. Review the newly created `docs/plans/YYYY-MM-DD-my-platform.md`, which `template:init` writes directly from `docs/plans/templates/project-brief.md` using the captured product idea or placeholders.
-5. Let Codex refine that brief and verify skills, or run the printed fallback `codex exec` command manually.
+5. Let Codex refine that brief in place and verify skills in `workspace-write` mode, or run the printed fallback command manually.
 6. Review any remaining `codex-monorep-template` references before the first commit.
 
 ## Configure Environments
@@ -21,6 +21,7 @@
 - Use `docs/plans/templates/project-brief.md` for the initial project brief and `docs/plans/templates/product-prd.md` when the work needs a deeper product requirements document.
 - Use `docs/init/README.md` when you need to re-run or debug the Codex bootstrap flow.
 - Reuse `.codex/bootstrap/init.prompt.md` if you want Codex to repeat the initial bootstrap flow in the same workspace.
+- Keep the bootstrap responsibility split explicit: Node owns the interview, path decisions, fallback behavior, and orchestration; Codex only refines the prepared brief and handles the prompt-scoped checks.
 - Use `apps/api/src/modules/system` as the reference vertical slice for backend work.
 - Use `apps/web/src/pages/home` plus `apps/web/src/features/template-readiness` as the reference vertical slice for frontend work.
 
@@ -28,7 +29,7 @@ Manual fallback path:
 
 - Run `pnpm install` yourself if you skipped it during bootstrap.
 - Run `pnpm template:init --name=my-platform --skip-install --no-run-codex --project-idea="Describe what you want to build"` if you only want file preparation.
-- Run `codex exec --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"` when you are ready for Codex to verify skills and refine the initial brief.
+- Run `codex exec --sandbox workspace-write --cd "/absolute/path/to/workspace" - < "/absolute/path/to/workspace/.codex/bootstrap/init.prompt.md"` when you are ready for Codex to verify skills and refine the initial brief directly.
 
 ## Before Opening A PR
 
