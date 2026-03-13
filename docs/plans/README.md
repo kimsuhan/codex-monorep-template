@@ -19,7 +19,7 @@ Use this folder for project and initiative planning documents created from this 
 
 ## Suggested Flow
 
-1. Copy `templates/project-brief.md` into a new dated file.
-2. Fill in the minimum product context before implementation starts.
+1. Let `pnpm template:init` create the first dated brief from `templates/project-brief.md` during repository bootstrap.
+2. Review and refine the minimum product context before implementation starts.
 3. Expand into `templates/product-prd.md` only when the work needs deeper structure.
 4. Update the planning document when major assumptions or scope decisions change.

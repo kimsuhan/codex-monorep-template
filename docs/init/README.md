@@ -2,13 +2,14 @@
 
 `pnpm template:init` is the canonical first-run bootstrap for this template.
 
-It now handles four things in one guided flow:
+It now handles six things in one guided flow:
 
 1. Replace the template identity with your project name.
 2. Optionally run `pnpm install`.
 3. Ask what you want to build, unless you already provided `--project-idea="..."`.
-4. Generate a Codex bootstrap prompt and manifest in `.codex/bootstrap/`.
-5. Optionally run `codex exec` so Codex can verify skills and create the first `docs/plans` brief.
+4. Create the initial `docs/plans/YYYY-MM-DD-<project>.md` brief directly from `docs/plans/templates/project-brief.md`.
+5. Generate a Codex bootstrap prompt and manifest in `.codex/bootstrap/`.
+6. Optionally run `codex exec` so Codex can verify skills and refine the first `docs/plans` brief.
 
 ## Tracked Sources Of Truth
 
@@ -23,7 +24,7 @@ The bootstrap script writes these local artifacts and keeps them out of git:
 - `.codex/bootstrap/init.prompt.md`
 - `.codex/bootstrap/init.config.json`
 
-The manifest records whether a project idea was already captured locally or whether Codex still needs to ask the user before writing the brief.
+The manifest records whether a project idea was already captured locally or whether Codex still needs to ask the user before refining the brief.
 
 Use the prompt file when you want to run Codex manually:
 
@@ -63,8 +64,8 @@ If an optional skill is not selected, it is omitted from the generated prompt.
 
 - If the local `codex` CLI is available, `pnpm template:init` can immediately run the generated prompt.
 - If the CLI is missing, or you decline autorun, the script prints the exact fallback `codex exec` command.
-- If no product idea was captured before Codex runs, the generated prompt tells Codex to ask the user first and only then write `docs/plans/YYYY-MM-DD-<project>.md`.
-- Autorun is best-effort only. The template rename and local bootstrap artifact generation still complete even when Codex is unavailable.
+- If no product idea was captured before Codex runs, the generated prompt tells Codex to ask the user first and only then refine the placeholder brief.
+- Autorun is best-effort only. The template rename, initial brief creation, and local bootstrap artifact generation still complete even when Codex is unavailable or constrained.
 
 ## End State
 
@@ -72,5 +73,6 @@ The bootstrap is complete when:
 
 1. the template identity has been replaced,
 2. dependencies are installed if requested,
-3. the Codex bootstrap artifacts exist, and
-4. Codex has created the first `docs/plans/YYYY-MM-DD-<project>.md` brief or the manual command is ready to run.
+3. the initial `docs/plans/YYYY-MM-DD-<project>.md` brief exists,
+4. the Codex bootstrap artifacts exist, and
+5. Codex has refined the brief or the manual command is ready to run.

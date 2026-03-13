@@ -20,6 +20,7 @@ import {
 
 const TEMPLATE_PACKAGE_NAME = 'codex-monorep-template';
 const TEMPLATE_DISPLAY_NAME = 'Codex Internal Template';
+const projectBriefTemplatePath = 'docs/plans/templates/project-brief.md';
 
 const textReplacementPaths = [
   'README.md',
@@ -48,6 +49,11 @@ const DEFAULT_SHOULD_BOOTSTRAP_SKILLS = true;
 const DEFAULT_SHOULD_RUN_CODEX = false;
 const MISSING_PROJECT_IDEA_MESSAGE =
   'No product idea was captured during bootstrap.';
+const MISSING_PROJECT_IDEA_PLACEHOLDER =
+  'To be provided during Codex brief refinement.';
+const BRIEF_PLACEHOLDER = 'To be refined during Codex brief refinement.';
+const BRIEF_OPEN_QUESTIONS_PLACEHOLDER =
+  'Specific users, workflow details, and success criteria still need validation.';
 
 export function deriveProjectIdentity(inputName) {
   const packageName = inputName
@@ -381,8 +387,8 @@ export function buildBootstrapPrompt(templateContents, configuration) {
     ? 'verify, install, and report the listed skills before moving on'
     : 'verify the listed skills, report anything missing, and do not install anything automatically';
   const projectIdeaMode = configuration.shouldAskForProjectIdea
-    ? 'ask the user what they want to build before writing the brief'
-    : 'use the captured idea below as source material for the brief';
+    ? 'ask the user what they want to build before refining the existing brief'
+    : 'use the captured idea below as source material to verify and refine the existing brief';
   const projectIdea = configuration.projectIdea?.trim()
     ? configuration.projectIdea.trim()
     : MISSING_PROJECT_IDEA_MESSAGE;
@@ -431,6 +437,193 @@ export async function generateBootstrapArtifacts(workspacePath, configuration) {
   return {
     promptPath,
     manifestPath,
+  };
+}
+
+function getTodayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function formatInlineValue(value) {
+  return value
+    .trim()
+    .split('\n')
+    .map((line) => line.trim())
+    .join('\n  ');
+}
+
+function replaceLine(templateContents, linePrefix, nextValue) {
+  const pattern = new RegExp(`^${escapeRegExp(linePrefix)}.*$`, 'm');
+  return templateContents.replace(pattern, `${linePrefix}${nextValue}`);
+}
+
+function buildDraftSections(projectIdea) {
+  const normalizedIdea = projectIdea.trim();
+
+  if (!normalizedIdea) {
+    return {
+      sourceIdea: MISSING_PROJECT_IDEA_PLACEHOLDER,
+      problem: [
+        BRIEF_PLACEHOLDER,
+        'Why this matters now: To be refined.',
+      ],
+      targetUsers: [
+        BRIEF_PLACEHOLDER,
+        'Usage context: To be refined.',
+      ],
+      goals: [
+        BRIEF_PLACEHOLDER,
+        'Secondary goals: To be refined.',
+      ],
+      nonGoals: BRIEF_PLACEHOLDER,
+      coreUserFlow: [
+        BRIEF_PLACEHOLDER,
+        'To be refined.',
+        'To be refined.',
+      ],
+      successMetrics: BRIEF_PLACEHOLDER,
+      openQuestions: BRIEF_OPEN_QUESTIONS_PLACEHOLDER,
+    };
+  }
+
+  const conciseIdea = normalizedIdea
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .join(' ');
+
+  return {
+    sourceIdea: normalizedIdea,
+    problem: [
+      `Turn "${conciseIdea}" into a concrete first product direction instead of leaving the workflow implicit.`,
+      'Why this matters now: The team needs an actionable brief before implementation starts.',
+    ],
+    targetUsers: [
+      'Teams and operators directly involved in the workflow described in the source idea.',
+      'Usage context: They are trying to complete that workflow with less manual coordination and clearer system support.',
+    ],
+    goals: [
+      `Define a first implementation-ready scope for "${conciseIdea}".`,
+      'Secondary goals: Clarify assumptions, expected outcomes, and the minimum useful first release.',
+    ],
+    nonGoals:
+      'Adjacent workflows, broad platform expansion, and deeper automation not required for the first release.',
+    coreUserFlow: [
+      'A target user enters the product to start the workflow described in the source idea.',
+      'They complete the central action the product is meant to support.',
+      'They reach the intended outcome with less friction and a clearer system record.',
+    ],
+    successMetrics:
+      'Stakeholders align on scope, early users can complete the core workflow, and the team can move into implementation planning without major ambiguity.',
+    openQuestions:
+      'Which user segment matters most first, what constraints or integrations are required, and what success threshold defines a strong first release?',
+  };
+}
+
+export function buildInitialProjectBrief(templateContents, configuration) {
+  const sections = buildDraftSections(configuration.projectIdea ?? '');
+
+  let briefContents = templateContents;
+  briefContents = replaceLine(
+    briefContents,
+    '- Project or initiative:',
+    ` ${configuration.projectName}`,
+  );
+  briefContents = replaceLine(briefContents, '- Owner:', ' To be assigned');
+  briefContents = replaceLine(
+    briefContents,
+    '- Date:',
+    ` ${configuration.date ?? getTodayIsoDate()}`,
+  );
+  briefContents = replaceLine(briefContents, '- Status:', ' Draft');
+  briefContents = replaceLine(
+    briefContents,
+    '- Original request or idea:',
+    ` ${formatInlineValue(sections.sourceIdea)}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- What problem are we solving?',
+    ` ${sections.problem[0]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- Why does it matter now?',
+    ` ${sections.problem[1]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- Who is this for?',
+    ` ${sections.targetUsers[0]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- What context are they in when they use it?',
+    ` ${sections.targetUsers[1]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- Primary goal:',
+    ` ${sections.goals[0]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- Secondary goals:',
+    ` ${sections.goals[1]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- What is explicitly out of scope for this phase?',
+    ` ${sections.nonGoals}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '1. Entry point:',
+    ` ${sections.coreUserFlow[0]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '2. Key action:',
+    ` ${sections.coreUserFlow[1]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '3. Expected outcome:',
+    ` ${sections.coreUserFlow[2]}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- What signals will tell us this is working?',
+    ` ${sections.successMetrics}`,
+  );
+  briefContents = replaceLine(
+    briefContents,
+    '- What still needs validation or a product decision?',
+    ` ${sections.openQuestions}`,
+  );
+
+  return `${briefContents.trim()}\n`;
+}
+
+export async function writeInitialProjectBrief(workspacePath, configuration) {
+  const templatePath = path.join(workspacePath, projectBriefTemplatePath);
+  const targetPath = path.join(workspacePath, configuration.projectBriefPath);
+  const templateContents = await readFile(templatePath, 'utf8');
+  const briefContents = buildInitialProjectBrief(templateContents, {
+    projectName: configuration.projectName,
+    projectIdea: configuration.projectIdea,
+    date: configuration.date,
+  });
+
+  await mkdir(path.dirname(targetPath), { recursive: true });
+  await writeFile(targetPath, briefContents);
+
+  return {
+    briefPath: targetPath,
   };
 }
 
@@ -664,7 +857,7 @@ async function collectBootstrapAnswers(parsedArguments, workspacePath) {
 }
 
 function buildProjectBriefPath(projectName) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getTodayIsoDate();
   return `docs/plans/${today}-${projectName}.md`;
 }
 
@@ -715,10 +908,16 @@ async function runCli() {
     workspacePath,
     bootstrapConfiguration,
   );
+  const brief = await writeInitialProjectBrief(workspacePath, {
+    projectName: identity.packageName,
+    projectBriefPath: bootstrapConfiguration.projectBriefPath,
+    projectIdea: answers.projectIdea ?? '',
+  });
 
   output.write(
     `Template initialized for ${identity.displayName} (${identity.packageName}).\n`,
   );
+  output.write(`Project brief: ${brief.briefPath}\n`);
   output.write(`Bootstrap prompt: ${artifacts.promptPath}\n`);
   output.write(`Bootstrap manifest: ${artifacts.manifestPath}\n`);
 

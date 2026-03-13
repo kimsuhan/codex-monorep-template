@@ -10,7 +10,7 @@
 
 ## Commands
 
-- `pnpm template:init`: replace template identity after cloning, generate `.codex/bootstrap/*`, and optionally run the first Codex bootstrap
+- `pnpm template:init`: replace template identity after cloning, create the initial `docs/plans` brief, generate `.codex/bootstrap/*`, and optionally run the first Codex bootstrap
 - `pnpm dev`: start both apps
 - `pnpm lint`: run app lint checks
 - `pnpm typecheck`: run app type checks

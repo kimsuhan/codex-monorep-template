@@ -25,7 +25,7 @@ If a skill is missing and the install summary gives you a concrete source or com
 
 ## Project Brief
 
-Create the initial project brief at `{{PROJECT_BRIEF_PATH}}` using `docs/plans/templates/project-brief.md` as the source template.
+An initial project brief already exists at `{{PROJECT_BRIEF_PATH}}`, created by `pnpm template:init` from `docs/plans/templates/project-brief.md`.
 
 Project idea mode: {{PROJECT_IDEA_MODE}}.
 
@@ -35,10 +35,10 @@ Captured product idea:
 
 Requirements:
 
-- Fill in the brief for the current project name, `{{PROJECT_NAME}}`.
-- If no product idea was captured yet, ask the user what they want to build first and wait for the answer before writing the brief.
+- Review the existing brief for the current project name, `{{PROJECT_NAME}}`, and refine it in place.
+- If no product idea was captured yet, ask the user what they want to build first and wait for the answer before updating the brief.
 - Preserve the user's original wording in the `Source Idea` section of the brief.
-- Translate the raw idea into the existing brief sections: Problem, Target Users, Goals, Non-Goals, Core User Flow, Success Metrics, and Open Questions.
+- Verify that the draft sections still match the source idea, then improve them where needed across Problem, Target Users, Goals, Non-Goals, Core User Flow, Success Metrics, and Open Questions.
 - Keep the brief decision-ready, concise, and suitable for the first implementation planning pass.
 - Do not start feature implementation.
 - Do not create additional planning files unless the existing brief template clearly requires them.
@@ -50,5 +50,5 @@ Stop after a short readiness summary that includes:
 - which docs were reviewed,
 - which required skills were verified or installed,
 - which optional skills were handled,
-- the path to the created project brief, and
+- the path to the refined project brief, and
 - any manual next step that still blocks normal development.

@@ -22,8 +22,9 @@ pnpm dev
 - replaces the template identity
 - can run `pnpm install`
 - asks what you want to build, or accepts `--project-idea="..."`
+- creates `docs/plans/YYYY-MM-DD-<project>.md` immediately from `docs/plans/templates/project-brief.md`
 - generates `.codex/bootstrap/init.prompt.md`
-- can run `codex exec` so Codex verifies skills and creates the first `docs/plans` brief
+- can run `codex exec` so Codex verifies skills and refines the first `docs/plans` brief
 
 If you decline Codex autorun, the script prints the exact fallback command to run manually.
 
@@ -118,6 +119,7 @@ Important constraint:
 - Do not assume a checked-in project folder like `./skills` will be auto-loaded.
 - After installing or updating skills, restart Codex so the new skills are discovered.
 - `pnpm template:init` writes `.codex/bootstrap/init.prompt.md` and `.codex/bootstrap/init.config.json` for the current workspace, then optionally runs the prompt with `codex exec`.
+- `pnpm template:init` also writes the initial `docs/plans/YYYY-MM-DD-<project>.md` brief before any Codex autorun begins.
 
 Repository policy:
 
